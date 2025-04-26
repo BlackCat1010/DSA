@@ -1,2 +1,2 @@
 # DSA
-For Storing works related to DSA
+For Storing files for working related to DSA
