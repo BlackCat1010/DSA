@@ -1,11 +1,15 @@
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
 
-public class Board {
-    private int[] boardArray;
+public final class Board {
+    private final int[] boardArray;
     private final int[][] tiles;
-    int length;
+    private final int length;
+
+    public int getlength(){
+        return this.length;
+    }
 
     // create a board from an n-by-n array of tiles,
     // where tiles[row][col] = tile at (row, col)
@@ -25,6 +29,7 @@ public class Board {
     }
                                            
     // string representation of this board
+    @Override
     public String toString() {
         // System.out.println("check this "+boardArray[2]);
         String builder = String.valueOf(length);
@@ -105,7 +110,6 @@ public class Board {
     // does this board equal y?
     @Override
     public boolean equals(Object y){
-        // 
 
         // 1. Check for self-comparison
         if (this == y) {
@@ -142,19 +146,69 @@ public class Board {
 
 
     // all neighboring boards
-    public Iterable<Board> neighbors(){
-        return new Iterable<Board>() {
-            @Override
-            public Iterator<Board> iterator() {
-                // TODO Auto-generated method stub
-                throw new UnsupportedOperationException("Unimplemented method 'iterator'");
+    public Iterable<Board> neighbors() {
+        ArrayList<Board> neighborsList = new ArrayList<>();
+
+        int blankRowIndx = 0;
+        int blankColIndx = 0;
+        for(int i = 0; i < length; i++){
+            for (int j = 0; j < length;j++){
+                if(tiles[i][j] == 0) {
+                blankRowIndx = i;
+                blankColIndx = j;
+                break;
+                }
             }
-            
+        }
+        
+        int[][] cardinalDirections = 
+        { {1,0}, // Down
+        {0,1}, // Right
+        {0,-1}, // Left
+        {-1,0} // Up
         };
+
+        for (int i = 0; i < 4; i++) {
+            int newRow = blankRowIndx + cardinalDirections[i][0];
+            int newCol = blankColIndx + cardinalDirections[i][1];
+
+            if (newRow < length && newRow >= 0 && newCol >= 0 && newCol < length){
+                // Valid
+                int[][] tilesClone = new int[length][length];
+
+                for (int r = 0; r < length; r++) {
+                    System.arraycopy(tiles[r], 0, tilesClone[r], 0, length);
+                }
+
+                tilesClone[blankRowIndx][blankColIndx] = tilesClone[newRow][newCol];
+                tilesClone[newRow][newCol] = 0;
+                neighborsList.add(new Board(tilesClone));
+            }
+        }
+        return neighborsList;
     }
 
     // a board that is obtained by exchanging any pair of tiles
     public Board twin(){
+        int[][] twinTiles = new int[length][length];
+
+        for (int r = 0; r < length; r++) {
+            System.arraycopy(tiles[r], 0, twinTiles[r], 0, length);
+        }
+
+        for (int i = 0; i < length; i++ ){
+            for (int j = 0; j < length; j++ ){
+                if (twinTiles[i][j]!=0 && twinTiles[i][j+1]!=0) {
+                    int temp = twinTiles[i][j];
+                    twinTiles[i][j] = twinTiles[i][j+1];
+                    twinTiles[i][j+1] = temp;
+                    
+                    return new Board(twinTiles);
+
+                }
+            }
+        }
+        // Should never return this
         return null;
     }
 
