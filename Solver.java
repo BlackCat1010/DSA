@@ -2,21 +2,21 @@ import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.MinPQ;
 import edu.princeton.cs.algs4.StdOut;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedList;
 
 public class Solver {
-    private searchNode resultNode;
+    private SearchNode resultNode;
     private Board board;
+    private boolean solvable;
 
-    private class searchNode {
+    private class SearchNode {
         Board board;
         int movesToReachBoard;
-        Board prev;
+        SearchNode prev;
         // int hammingval;
         int manhattenval;
 
-        public searchNode(Board board, int movesToReachBoard,Board prev) {
+        public SearchNode(Board board, int movesToReachBoard, SearchNode prev) {
             this.board = board;
             this.movesToReachBoard = movesToReachBoard;
             this.prev = prev;
@@ -25,11 +25,11 @@ public class Solver {
         
     }
 
-    private static class searchNodeComparator implements Comparator<searchNode> {
+    private static class SearchNodeComparator implements Comparator<SearchNode> {
             @Override
-            public int compare (searchNode o1, searchNode o2) {
+            public int compare(SearchNode o1, SearchNode o2) {
                 // Prefer if hamming is small.
-                return Integer.compare(o1.manhattenval,o2.manhattenval);
+                return Integer.compare(o1.manhattenval, o2.manhattenval);
             }
     }
 
@@ -42,58 +42,67 @@ public class Solver {
         }
         this.board = initial;
         
-        MinPQ<searchNode> prioQ = new MinPQ<>(4,new searchNodeComparator());
-        Set<Board> visited = new HashSet<>();
+        MinPQ<SearchNode> prioQ = new MinPQ<>(new SearchNodeComparator());
+        MinPQ<SearchNode> prioQTwins = new MinPQ<>(new SearchNodeComparator());
+        // Set<Board> visited = new HashSet<>();
+        // Set<Board> visitedTwins = new HashSet<>();
 
-        int movesToReachBoard = 0;
-        Board prev;
-        Board initboard = initial;
-        visited.add(board);
-
-        searchNode initNode = new searchNode(initboard,movesToReachBoard,null);
+        SearchNode initNode = new SearchNode(initial, 0, null);
+        SearchNode initNodeTwins = new SearchNode(initial.twin(), 0, null);
         prioQ.insert(initNode);
-        searchNode min = prioQ.delMin();
+        prioQTwins.insert(initNodeTwins);
 
-        while (!min.board.isGoal()) {
-            visited.add(min.board);
-            movesToReachBoard = min.movesToReachBoard+1;
-            prev = min.board;
-            for (Board itboard :prev.neighbors()) {
-
-                // Critical Optimization - Only enqueue if not equals
-                // Added Set to hold visited boards from recurring nodes.
-                if (!itboard.equals(prev)) {
-                    if (!visited.contains(itboard)) {
-                        searchNode node = new searchNode(itboard,movesToReachBoard,prev);
-                        prioQ.insert(node);
-                    }
-                }
+        while (true) {
+            if (processStep(prioQ)) {
+                this.solvable = true;
+                return;
             }
-            min = prioQ.delMin();
+             if (processStep(prioQTwins)) {
+                this.solvable = false;
+                this.resultNode = null;
+                return;
+             }
+
         }
-        this.resultNode = min;
+    }
+
+    // private boolean processStep(MinPQ<SearchNode> prioQ,Set<Board> visited) {
+    private boolean processStep(MinPQ<SearchNode> prioQ) {
+        if (prioQ == null) {
+            return false;
+        }
+        SearchNode min = prioQ.delMin();
+        if (min.board.isGoal()) {
+            this.resultNode = min;
+            return true;
+        }
+        
+        // visited.add(min.board);
+        int movestoReachBoard = min.movesToReachBoard + 1;
+        SearchNode prev = min;
+        for (Board itboard : prev.board.neighbors()) {
+            if (prev.prev == null || !itboard.equals(prev.prev.board)) {
+                SearchNode node = new SearchNode(itboard, movestoReachBoard, prev);
+                prioQ.insert(node);
+            }
+        }
+        return false;
+
+
     }
 
     // is the initial board solvable? (see below)
     public boolean isSolvable() {
         // Counting Inversions. Alternative method is to implement:
         // Concurrent processing of original board and its twin in while true loop until 1 found.
-        int inversion = 0;
-        for (int i = 0; i < board.dimension(); i++) {
-            for (int j = i + 1; j < board.dimension(); j++ ){
-                if (board.getBoardArray()[i] != 0 && board.getBoardArray()[j] != 0 && board.getBoardArray()[i] > board.getBoardArray()[j]){
-                    inversion++;
-                }
-            }
-        }
-        return inversion % 2 == 0;
+        return this.solvable;
     }
 
     // min number of moves to solve initial board; -1 if unsolvable
     public int moves() {
-        if (this.resultNode==null) {
+        if (this.resultNode == null) {
             return -1;
-        } else{
+        } else {
             return this.resultNode.movesToReachBoard;
         }
         // TO DO
@@ -103,14 +112,19 @@ public class Solver {
     // sequence of boards in a shortest solution; null if unsolvable
     public Iterable<Board> solution() {
         // If unsolvable
-        if (this.isSolvable()){
-            
-            return null;   
-        }else{
+        if (this.isSolvable()) {
+            LinkedList<Board> path = new LinkedList<>();
+            SearchNode node = this.resultNode;
+            while (node.prev != null) {
+                path.addFirst(node.board);
+                node = node.prev;
+            }
+            // Add Final 
+            path.addFirst(node.board);
+        return path;
+        } else {
             return null;
         }
-
-
     }
 
     // test client (see below) 
