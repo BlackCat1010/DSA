@@ -1,31 +1,40 @@
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Objects;
 
 public final class Board {
     private final int[] boardArray;
     private final int[][] tiles;
     private final int length;
 
-    public int getlength(){
-        return this.length;
+    public int[] getBoardArray() {
+        return this.boardArray;
+
     }
 
     // create a board from an n-by-n array of tiles,
     // where tiles[row][col] = tile at (row, col)
     public Board(int[][] tiles) {
-        this.tiles = tiles;
         this.length = tiles.length;
         this.boardArray = new int[length*length];
+
+        // Defensive Copy
+        int[][] tilesCopy = new int[this.length][this.length];
+        for (int i = 0; i < this.length; i++) {
+            for (int j = 0; j < this.length; j++) {
+                tilesCopy[i][j] = tiles[i][j];
+            }
+        }
+
+        this.tiles = tilesCopy;
+        
 
         // Clone
         for (int i = 0; i < length; i++) {
             for (int j = 0; j < length; j++) {
-                boardArray[i*length+j]=tiles[i][j];
-                System.out.println(boardArray[i*length+j] +" added. ");
+                boardArray[i*length+j] = tiles[i][j];
+                // System.out.println(boardArray[i*length+j] +" added. ");
             }
         }
-
     }
                                            
     // string representation of this board
@@ -34,7 +43,7 @@ public final class Board {
         // System.out.println("check this "+boardArray[2]);
         String builder = String.valueOf(length);
         for (int i = 0; i < length*length; i++) {
-            if(i % length == 0){
+            if (i % length == 0) {
                 builder = builder + "\n";
             }
             builder = builder +" "+ String.valueOf(boardArray[i]);
@@ -48,20 +57,14 @@ public final class Board {
         return length;
     }
 
-    // number of tiles out of place - did not handle for 0. dont unds whats 0
+    // number of tiles out of place dont handle for 0.
     public int hamming() {
         int hammingCounter = 0;
-        for (int i = 0; i < length*length-1; i++) {
-            if(boardArray[i]!=i+1){
+        for (int i = 0; i < length*length; i++) {
+            if (boardArray[i] != 0 && boardArray[i] != i+1) {
                 hammingCounter++;
             }
         }
-
-        // Handling 0
-
-        if(boardArray[length*length-1]!=0) {
-                hammingCounter++;
-            }
         return hammingCounter;
     }
 
@@ -74,32 +77,18 @@ public final class Board {
     public int manhattan() {
         int manhattendist = 0;
         for (int i = 0; i < length*length-1; i++){
-            if(boardArray[i]!=i+1 && boardArray[i]!=0){
-                int diff = Math.abs(boardArray[i]- (i+1));
-                manhattendist = manhattendist+ diff/length + diff%length;
-            }
-
-            // For handling 0 value out of position
-            if(boardArray[i]!=i+1 && boardArray[i]==0){
-                int diff = Math.abs(length*length- (i+1));
-                manhattendist = manhattendist+ diff/length + diff%length;
-            }
-
-            
-        }
-
-        // For Handling 0 position
-        if(boardArray[length*length-1]!=0){
-            int diff = Math.abs(boardArray[length*length-1]- (length*length));
-            manhattendist = manhattendist+ diff/length + diff%length;
+            if (boardArray[i] != i+1 && boardArray[i] != 0) {
+                int diff = Math.abs(boardArray[i] - (i+1));
+                manhattendist = manhattendist+ diff / length + diff % length;
+            }    
         }
         return manhattendist;
     }
 
     // is this board the goal board?
-    public boolean isGoal(){
-        for (int i = 0; i < length*length-1; i++){
-            if(boardArray[i]!=i){
+    public boolean isGoal() {
+        for (int i = 0; i < length*length - 1; i++) {
+            if ( boardArray[i] != i+1 ) {
                 return false;
             }
         }
@@ -117,7 +106,7 @@ public final class Board {
         }
 
         // 2. Check for null
-        if (y == null){
+        if (y == null) {
             return false;
         }
 
@@ -133,16 +122,14 @@ public final class Board {
         // For primitive types, use ==
         // For object types, use equals() or Objects.equals() to handle nulls
         // For arrays, use Arrays.equals() or Arrays.deepEquals() for nested arrays
-        return this.length == that.length &&
-           Arrays.equals(this.boardArray,that.boardArray) &&
-           Arrays.deepEquals(this.tiles, that.tiles);
+        return Arrays.deepEquals(this.tiles, that.tiles);
     }
 
     // Below also overwritten as part of Java requirement for Collections-based Objects comparison
-    @Override
-    public int hashCode() {
-        return Objects.hash(length, Arrays.hashCode(boardArray), Arrays.hashCode(tiles));
-    }
+    // @Override
+    // private int hashCode() {
+    //    return Objects.hash(length, Arrays.hashCode(boardArray), Arrays.hashCode(tiles));
+    // }
 
 
     // all neighboring boards
@@ -152,8 +139,8 @@ public final class Board {
         int blankRowIndx = 0;
         int blankColIndx = 0;
         for(int i = 0; i < length; i++){
-            for (int j = 0; j < length;j++){
-                if(tiles[i][j] == 0) {
+            for (int j = 0; j < length; j++) {
+                if (tiles[i][j] == 0) {
                 blankRowIndx = i;
                 blankColIndx = j;
                 break;
@@ -172,7 +159,7 @@ public final class Board {
             int newRow = blankRowIndx + cardinalDirections[i][0];
             int newCol = blankColIndx + cardinalDirections[i][1];
 
-            if (newRow < length && newRow >= 0 && newCol >= 0 && newCol < length){
+            if (newRow < length && newRow >= 0 && newCol >= 0 && newCol < length) {
                 // Valid
                 int[][] tilesClone = new int[length][length];
 
@@ -189,16 +176,16 @@ public final class Board {
     }
 
     // a board that is obtained by exchanging any pair of tiles
-    public Board twin(){
+    public Board twin() {
         int[][] twinTiles = new int[length][length];
 
         for (int r = 0; r < length; r++) {
             System.arraycopy(tiles[r], 0, twinTiles[r], 0, length);
         }
 
-        for (int i = 0; i < length; i++ ){
-            for (int j = 0; j < length; j++ ){
-                if (twinTiles[i][j]!=0 && twinTiles[i][j+1]!=0) {
+        for (int i = 0; i < length; i++) {
+            for (int j = 0; j < length; j++) {
+                if (twinTiles[i][j] != 0 && twinTiles[i][j+1] != 0) {
                     int temp = twinTiles[i][j];
                     twinTiles[i][j] = twinTiles[i][j+1];
                     twinTiles[i][j+1] = temp;
@@ -236,10 +223,10 @@ public final class Board {
         sampledata2[2][1] = 8;
         sampledata2[2][2] = 9;
 
-        Board brd = new Board(sampledata);
-        Object brd2 = new Board(sampledata2);
-        System.out.println(brd.toString());
-        System.out.println(brd.equals(brd2));
+        // Board brd = new Board(sampledata);
+        // Object brd2 = new Board(sampledata2);
+        // System.out.println(brd.toString());
+        // System.out.println(brd.equals(brd2));
     }
 
 }
